@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import func
+from sqlalchemy import func, UniqueConstraint
 from sqlalchemy.orm import declarative_base, Mapped, mapped_column
 
 Base = declarative_base()
@@ -8,6 +8,9 @@ Base = declarative_base()
 
 class SpimexTradingResults(Base):
     __tablename__ = 'spimex_trading_results'
+    __table_args__ = (
+        UniqueConstraint("exchange_product_id", "date", name="uniq_product_date"),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     exchange_product_id: Mapped[str] = mapped_column(nullable=False)
@@ -22,6 +25,3 @@ class SpimexTradingResults(Base):
     date: Mapped[datetime] = mapped_column(nullable=False)
     created_on: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_on: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
-
-    class Meta:
-        unique_together = ("exchange_product_id", "date")
