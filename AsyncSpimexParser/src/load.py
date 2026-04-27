@@ -1,7 +1,7 @@
 import logging
 
 import pandas as pd
-from sqlalchemy import insert
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models import SpimexTradingResults
@@ -30,7 +30,8 @@ async def load_to_db(
         for i in range(0, len(rows), batch_size):
             batch = rows[i: i + batch_size]
             stmt = insert(SpimexTradingResults).values(batch)
-            await session.execute(stmt)
+            upsert_stmt = stmt.on_conflict_do_nothing(index_elements=["exchange_product_id", "date"])
+            await session.execute(upsert_stmt)
         await session.commit()
         logger.info(f"[LOAD] Успешно вставлено {len(df)} строк")
 

@@ -22,3 +22,6 @@ class SpimexTradingResults(Base):
     date: Mapped[datetime] = mapped_column(nullable=False)
     created_on: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_on: Mapped[datetime] = mapped_column(server_default=func.now(), onupdate=func.now())
+
+    class Meta:
+        unique_together = ("exchange_product_id", "date")

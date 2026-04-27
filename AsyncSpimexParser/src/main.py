@@ -5,6 +5,13 @@ from datetime import date
 
 import aiohttp
 
+from config import (
+    URL,
+    TB_NAME,
+    DEFAULT_CONCURRENCY,
+    DEFAULT_START_DATE,
+    DEFAULT_END_DATE,
+)
 from src.database import AsyncSessionLocal
 from src.extract import (
     extract_pdf,
@@ -14,9 +21,6 @@ from src.extract import (
 from src.links import parse_page_links
 from src.load import load_to_db
 from src.transform import transform_df
-
-URL = "https://spimex.com/markets/oil_products/trades/results/"
-TB_NAME = "Единица измерения: Метрическая тонна"
 
 logger = logging.getLogger(__name__)
 
@@ -89,10 +93,10 @@ async def process_file(
 
 
 async def run_etl_async(
-        concurrency: int = 5,
+        concurrency: int = DEFAULT_CONCURRENCY,
         files_to_process=None,
-        start_date=date(2026, 4, 1),
-        end_date=date.today(),
+        start_date=DEFAULT_START_DATE,
+        end_date=DEFAULT_END_DATE,
 ):
     start_total = time.perf_counter()
 

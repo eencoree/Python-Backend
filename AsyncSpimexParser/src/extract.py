@@ -79,12 +79,16 @@ async def extract_xls(
     Асинхронная загрузка xls + parsing в thread
     """
     file_bytes = await download_bytes(session, url)
-
-    return await asyncio.to_thread(
-        parse_xls_bytes,
-        file_bytes,
-        tb_name
-    )
+    try:
+        df = await asyncio.to_thread(
+            parse_xls_bytes,
+            file_bytes,
+            tb_name
+        )
+    except ValueError as e:
+        logger.warning(f"[EXTRACT] Ошибка обработки {url} в 'parse_xls_bytes'")
+        return None
+    return df
 
 
 def parse_xls_bytes(file_bytes: bytes, table_name: str) -> pd.DataFrame:
@@ -212,6 +216,14 @@ def tables_to_dataframe(tables: List[List[List[str]]]) -> pd.DataFrame:
     logger.info(f"[EXTRACT] Получено {len(all_rows)} строк таблицы")
     return pd.DataFrame(all_rows, columns=header)
 
+def safe_int(x):
+    """Безопасное приведение числовых типов"""
+    try:
+        if x is None:
+            return None
+        return int(str(x).replace(" ", "").strip())
+    except (ValueError, TypeError):
+        return None
 
 def clean_df(df: pd.DataFrame) -> pd.DataFrame:
     """
@@ -232,9 +244,9 @@ def clean_df(df: pd.DataFrame) -> pd.DataFrame:
         "count"
     ]
     new_df.columns = new_header
-    new_df["volume"] = new_df["volume"].astype(int)
-    new_df["total"] = new_df["total"].astype(int)
-    new_df["count"] = new_df["count"].astype(int)
+    new_df["volume"] = new_df["volume"].apply(safe_int)
+    new_df["total"] = new_df["total"].apply(safe_int)
+    new_df["count"] = new_df["count"].apply(safe_int)
     new_df = new_df[new_df["count"] > 0].reset_index(drop=True)
     logger.info(
         f"[EXTRACT] Очистка данных: {len(df)} -> {len(new_df)} строк "

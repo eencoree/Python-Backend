@@ -4,6 +4,11 @@ from typing import Annotated
 
 import typer
 
+from config import (
+    DEFAULT_CONCURRENCY,
+    DEFAULT_START_DATE,
+    DEFAULT_END_DATE, DEFAULT_RETRIES, DEFAULT_LOG_LEVEL,
+)
 from src.database import create_tables
 
 app = typer.Typer(help="Spimex ETL CLI")
@@ -16,11 +21,11 @@ def parse_date(value: str) -> date:
 
 @app.command()
 def run(
-        start_date: Annotated[date, typer.Option(parser=parse_date)] = date(2026, 4, 1),
-        end_date: Annotated[date, typer.Option(parser=parse_date)] = date.today(),
-        concurrency: int = typer.Option(5, min=1),
-        retries: int = typer.Option(2, min=0),
-        log_level: str = typer.Option("INFO", case_sensitive=False),
+        start_date: Annotated[date, typer.Option(parser=parse_date)] = DEFAULT_START_DATE,
+        end_date: Annotated[date, typer.Option(parser=parse_date)] = DEFAULT_END_DATE,
+        concurrency: int = typer.Option(DEFAULT_CONCURRENCY, min=1),
+        retries: int = typer.Option(DEFAULT_RETRIES, min=0),
+        log_level: str = typer.Option(DEFAULT_LOG_LEVEL, case_sensitive=False),
 ):
     """Запуск ETL с ретраями"""
 
@@ -46,7 +51,7 @@ def run(
             )
 
             failed_files = await run_etl_async(
-                concurrency=max(3, concurrency - 2),
+                concurrency=max(DEFAULT_CONCURRENCY, concurrency - 2),
                 start_date=start_date,
                 end_date=end_date,
                 files_to_process=failed_files,
