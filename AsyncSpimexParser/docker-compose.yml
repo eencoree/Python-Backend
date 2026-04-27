@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:17
+    container_name: spimex_db
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrations:
+    build: .
+    container_name: spimex_migrations
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    command: >
+      sh -c "alembic upgrade head"
+
+  app:
+    build: .
+    container_name: spimex_app
+    depends_on:
+      migrations:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    command: >
+      run --concurrency 5 --retries 2 --log-level INFO
+
+volumes:
+  pgdata:
