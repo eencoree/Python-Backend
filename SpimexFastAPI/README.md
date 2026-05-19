@@ -87,10 +87,22 @@ GET /api/health
 pytest tests/unit
 ```
 
+или
+
+```bash
+pytest -m unit
+```
+
 ### Integration tests
 
 ```bash
 pytest tests/integration
+```
+
+или
+
+```bash
+pytest -m integration
 ```
 
 ### All tests
@@ -98,3 +110,11 @@ pytest tests/integration
 ```bash
 pytest -v
 ```
+
+### Run with coverage
+
+```bash
+pytest --cov=app --cov-report=html
+```
+
+Интерактивный HTML: [pytest coverage](htmlcov/index.html)

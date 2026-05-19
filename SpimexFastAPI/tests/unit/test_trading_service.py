@@ -1,3 +1,4 @@
+from datetime import date
 from unittest.mock import AsyncMock
 
 import pytest
@@ -6,6 +7,7 @@ from app.schemas import TradingResultResponse, DynamicsResponse
 from app.services import TradingService
 
 
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_get_last_trading_dates_cache_miss():
     repository = AsyncMock()
@@ -28,6 +30,7 @@ async def test_get_last_trading_dates_cache_miss():
     cache.set.assert_called_once()
 
 
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_get_last_trading_dates_cache_hit():
     repository = AsyncMock()
@@ -47,6 +50,7 @@ async def test_get_last_trading_dates_cache_hit():
     repository.get_last_trading_dates.assert_not_called()
 
 
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_get_trading_results(fixture_item):
     repository = AsyncMock()
@@ -70,6 +74,28 @@ async def test_get_trading_results(fixture_item):
     repository.get_trading_results.assert_called_once()
 
 
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_get_trading_results_repository_error():
+    repository = AsyncMock()
+    cache = AsyncMock()
+
+    cache.get.return_value = None
+    repository.get_trading_results.side_effect = Exception("DB error")
+
+    service = TradingService(repository, cache)
+
+    with pytest.raises(Exception):
+        await service.get_trading_results(
+            session=None,
+            oil_id=None,
+            delivery_type_id=None,
+            delivery_basis_id=None,
+            limit=10
+        )
+
+
+@pytest.mark.unit
 @pytest.mark.asyncio
 async def test_get_dynamics(fixture_item):
     repository = AsyncMock()
@@ -82,8 +108,8 @@ async def test_get_dynamics(fixture_item):
 
     result = await service.get_dynamics(
         session=None,
-        start_date="2024-01-01",
-        end_date="2024-01-10",
+        start_date=date(2024, 1, 1),
+        end_date=date(2024, 1, 10),
         oil_id=None,
         delivery_type_id=None,
         delivery_basis_id=None
@@ -92,3 +118,25 @@ async def test_get_dynamics(fixture_item):
     assert result == [DynamicsResponse(**fixture_item).model_dump()]
 
     repository.get_dynamics.assert_called_once()
+
+
+@pytest.mark.unit
+def test_trading_result_serialization(fixture_item):
+    model = TradingResultResponse(**fixture_item)
+
+    result = model.model_dump()
+
+    assert result["oil_id"] == "A1"
+
+
+@pytest.mark.unit
+def test_make_cache_key():
+    params1 = {"oil_id": "A1"}
+    params2 = {"oil_id": "A2"}
+    result1 = TradingService.make_cache_key("trading", params1)
+    result1_2 = TradingService.make_cache_key("trading", params1)
+
+    assert result1 == result1_2
+    result2 = TradingService.make_cache_key("trading", params2)
+
+    assert result1 != result2
